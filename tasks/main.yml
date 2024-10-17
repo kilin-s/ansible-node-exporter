@@ -1,0 +1,64 @@
+---
+
+- name: Check node exporter
+  stat:
+    path: /usr/sbin/node_exporter
+  register: node_exporter_bin
+
+
+- name: Download node exporter
+  get_url:
+    url: https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz 
+    dest: /tmp/node_exporter-1.6.1.linux-amd64.tar.gz
+  when: node_exporter_bin.stat.exists != true
+
+
+- name: Extract node exporter
+  ansible.builtin.unarchive:
+    src: /tmp/node_exporter-1.6.1.linux-amd64.tar.gz
+    dest: /usr/sbin
+    owner: root
+    group: root
+    mode: 0755
+    remote_src: true
+    exclude:
+    - LICENSE
+    - NOTICE
+    extra_opts:
+    - --strip-components
+    - 1
+  when: node_exporter_bin.stat.exists != true
+
+
+- name: Add user for node_exporter
+  user:
+    name: prometheus
+    create_home: no
+
+
+- name: Copy env file
+  template:
+    src: node_exporter
+    dest: /etc/default/node_exporter
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - Restart node exporter
+
+
+- name: Copy systemd unit
+  copy:
+    src: node_exporter.service
+    dest: /etc/systemd/system/node_exporter.service
+    owner: root
+    group: root
+    mode: 0644
+
+
+- name: Start node exporter
+  systemd:
+    name: node_exporter
+    state: started
+    daemon_reload: true
+    enabled: true

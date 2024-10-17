@@ -1,0 +1,18 @@
+[Unit]
+Description=Prometheus node exporter 
+Documentation=https://github.com/prometheus/node_exporter
+After=network-online.target
+
+[Service]
+Type=simple
+User=prometheus
+Group=prometheus
+
+EnvironmentFile=/etc/default/node_exporter
+ExecStart=/usr/sbin/node_exporter $OPTIONS
+
+SyslogIdentifier=node_exporter
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
